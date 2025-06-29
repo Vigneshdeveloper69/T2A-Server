@@ -8,6 +8,7 @@ import tempfile
 import shutil
 from gtts import gTTS
 import speech_recognition as sr
+import logging
 
 app = FastAPI()
 
@@ -47,12 +48,16 @@ async def upload_audio(file: UploadFile = File(...)):
         os.remove(tmp_path)
         return {"text": text}
     except Exception as e:
+        logging.error(f"Error in /api/upload: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# 🔊 Endpoint 2: Convert text to audio using gTTS
+# 🔊 Endpoint 2: Convert text to audio using gTTS with logging
 @app.post("/api/tts")
 async def text_to_speech(text: str = Form(...), lang: str = Form("en")):
     try:
+        if not text.strip():
+            return JSONResponse(status_code=400, content={"error": "Text cannot be empty."})
+
         filename = f"{uuid.uuid4().hex}.mp3"
         filepath = os.path.join(AUDIO_FOLDER, filename)
 
@@ -61,6 +66,7 @@ async def text_to_speech(text: str = Form(...), lang: str = Form("en")):
 
         return {"audio_url": f"https://t2a-server.onrender.com/static/{filename}"}
     except Exception as e:
+        logging.error(f"Error in /api/tts: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # 🎤 Optional Endpoint: Alternate name for speech-to-text
