@@ -15,10 +15,10 @@ app = FastAPI()
 # Enable logging
 logging.basicConfig(level=logging.INFO)
 
-# CORS configuration
+# CORS (Allow frontend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace with frontend URL in production
+    allow_origins=["*"],  # Change this to your frontend URL on production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,7 +32,7 @@ app.mount("/static", StaticFiles(directory=AUDIO_FOLDER), name="static")
 # Root endpoint
 @app.get("/")
 async def root():
-    return {"message": "T2A Server is running ✅"}
+    return {"message": "✅ T2A Server is running on Render!"}
 
 # 🎙️ Upload audio and convert to text
 @app.post("/api/upload")
@@ -50,35 +50,34 @@ async def upload_audio(file: UploadFile = File(...)):
         os.remove(tmp_path)
         return {"text": text}
     except Exception as e:
-        logging.error(f"Error in /api/upload: {e}")
+        logging.error(f"[ERROR] /api/upload: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 # 🔊 Convert text to speech and return URL
 @app.post("/api/tts")
 async def text_to_speech(request: Request, text: str = Form(...), lang: str = Form("en")):
-    SUPPORTED_LANGUAGES = {"en", "ta", "hi"}  # Add more if needed
+    SUPPORTED_LANGUAGES = {"en", "ta", "hi"}
 
     try:
         if not text.strip():
             return JSONResponse(status_code=400, content={"error": "Text cannot be empty."})
-
         if lang not in SUPPORTED_LANGUAGES:
             return JSONResponse(status_code=400, content={"error": f"Unsupported language: {lang}"})
 
         filename = f"{uuid.uuid4().hex}.mp3"
         filepath = os.path.join(AUDIO_FOLDER, filename)
 
-        logging.info(f"Generating audio for: {text[:30]}... in {lang}")
+        logging.info(f"[INFO] Generating audio in {lang} for text: {text[:30]}...")
         tts = gTTS(text=text, lang=lang)
         tts.save(filepath)
 
         base_url = str(request.base_url).rstrip("/")
         return {"audio_url": f"{base_url}/static/{filename}"}
     except Exception as e:
-        logging.error(f"Error in /api/tts: {e}")
+        logging.error(f"[ERROR] /api/tts: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# Optional alias endpoint
+# 🎤 Optional alias endpoint
 @app.post("/api/audio-to-text")
 async def audio_to_text(file: UploadFile = File(...)):
     return await upload_audio(file)
