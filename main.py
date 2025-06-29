@@ -11,10 +11,15 @@ import speech_recognition as sr
 
 app = FastAPI()
 
+# Root endpoint to avoid 404 on base URL
+@app.get("/")
+async def root():
+    return {"message": "T2A Server is running"}
+
 # Allow CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace with frontend URL if needed
+    allow_origins=["*"],  # Replace with your frontend URL for security
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
