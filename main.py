@@ -6,27 +6,27 @@ import os
 import uuid
 import tempfile
 import shutil
-import pyttsx3
+from gtts import gTTS
 import speech_recognition as sr
 
 app = FastAPI()
 
+# Allow CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or restrict to your frontend domain
+    allow_origins=["*"],  # Replace with frontend URL if needed
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Directory to store generated audio
+# Static folder for audio output
 AUDIO_FOLDER = "static"
 os.makedirs(AUDIO_FOLDER, exist_ok=True)
 
-# Mount static folder to serve audio files
 app.mount("/static", StaticFiles(directory=AUDIO_FOLDER), name="static")
 
-# Endpoint 1: Convert uploaded audio to text
+# 🗣️ Endpoint 1: Upload audio and convert to text
 @app.post("/api/upload")
 async def upload_audio(file: UploadFile = File(...)):
     try:
@@ -44,37 +44,21 @@ async def upload_audio(file: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# Endpoint 2: Convert text to speech
+# 🔊 Endpoint 2: Convert text to audio using gTTS
 @app.post("/api/tts")
 async def text_to_speech(text: str = Form(...), lang: str = Form("en")):
     try:
-        engine = pyttsx3.init()
-        voices = engine.getProperty("voices")
-
-        # Voice selection logic
-        voice_map = {
-            "en": "english",
-            "ta": "tamil",
-            "hi": "hindi"
-        }
-
-        target_voice = voice_map.get(lang.lower(), "english")
-        for voice in voices:
-            if target_voice in voice.name.lower():
-                engine.setProperty("voice", voice.id)
-                break
-
         filename = f"{uuid.uuid4().hex}.mp3"
         filepath = os.path.join(AUDIO_FOLDER, filename)
 
-        engine.save_to_file(text, filepath)
-        engine.runAndWait()
+        tts = gTTS(text=text, lang=lang)
+        tts.save(filepath)
 
-        return {"audio_url": f"http://localhost:8000/static/{filename}"}
+        return {"audio_url": f"https://t2a-server.onrender.com/static/{filename}"}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
-# Endpoint 3: Optional - extra speech-to-text API
+# 🎤 Optional Endpoint: Alternate name for speech-to-text
 @app.post("/api/audio-to-text")
 async def audio_to_text(file: UploadFile = File(...)):
     return await upload_audio(file)
