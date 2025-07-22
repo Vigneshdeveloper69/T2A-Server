@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 # CORS (Allow frontend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://vigneshdeveloper69.github.io"]
+    allow_origins=["https://vigneshdeveloper69.github.io"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
